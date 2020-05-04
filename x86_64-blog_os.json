@@ -1,0 +1,25 @@
+{
+  "__comment": "defaults for x86_64 systems",
+  "llvm-target": "x86_64-unknown-none",
+  "data-layout": "e-m:e-i64:64-f80:128-n8:16:32:64-S128",
+  "arch": "x86_64",
+  "target-endian": "little",
+  "target-pointer-width": "64",
+  "target-c-int-width": "32",
+  "os": "none",
+  "executables": true,
+
+  "linker-flavor": "ld.lld",
+  "linker": "rust-lld",
+  "__comment1": "since we assume no OS specific linkers, use LLVM's LLD for linking which comes with rust",
+
+  "panic-strategy": "abort",
+  "__comment2": "we don't implement stack unwinding for panics so set strategy to abort",
+
+  "disable-redzone": true,
+  "__comment3": "when interrupts occur, the kernel switches to a different stack through a hardware mechanism, but we won't implement that. We won't implement that so when interrupts occur, if redzone stack pointer optimizaiton, the interrupt will use the redzone. But functions on the stack also use the redzone for temporary vairbales so interrupts will overwrite the data in the redzone. Hence, we disable redzone stack pointer optimization to prevent this from happening.",
+
+  "features": "-mmx,-sse,+soft-float",
+  "__comment4": "-mmx,-sse disable support for Single Instruction Multiple Data. SIMD speeds up programs significantly but when a program is interupted, the kernel has to store the SIMD state which is very large, and then restore it after the interrupt. But since interrupts happen so often in our kernel, we disable it for better performance",
+  "__comment5": "floating point operations on x86_64 systems rely on SSE registors, but we disabled them. Hence, we enable floating point operation through software by using +soft-float"
+}
