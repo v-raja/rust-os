@@ -7,4 +7,16 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bootloader = "0.8.0"
+bootloader = "0.8.0"  # Creates image of our OS to run on emulator
+volatile = "0.2.6"    # Tells compiler not to optimize away reads and writes wrapped in Voltaile
+spin = "0.5.2"        # For spin lock mutex (used to lock the writer)
+x86_64 = "0.9.5"      # To write to QEMU port for success/failure of tests
+
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]  # Spin lock Mutex that doesn't use standard lib
+
+
+[package.metadata.bootimage]
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"] # Tell QEMU to exit after running tests and exit with value written to port 0xf4
+test-success-exit-code = 33 # 

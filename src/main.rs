@@ -13,29 +13,43 @@
 
 #![no_std] // don't link the Rust standard library
 #![no_main] // disable all Rust-level entry points
+#![feature(custom_test_frameworks)] // use custom test framework since standard framework depends on the standard library
+#![test_runner(crate::test_runner)] // use create test_runner as test runner
+#![reexport_test_harness_main = "test_main"] // changes test function test_runner name to test_main
 use core::panic::PanicInfo;
 
 mod vga_buffer; // module to safely write to vga buffer
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
-static HELLO: &[u8] = b"Hello World!";
+
+#[cfg(test)]
+fn test_runner(tests: &[&dyn Fn()]) {
+    println!("Running {} tests", tests.len());
+    for test in tests {
+        test();
+    }
+}
+
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
 
-    for (i, &byte) in HELLO.iter().enumerate() {
-        // Write letter and set color to cyan
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    // Only add test_main when running tests
+    #[cfg(test)]
+    test_main();
 
     loop {}
+}
+
+#[test_case]
+fn trivial_assertion() {
+    print!("trivial assertion...");
+    assert_eq!(1,1);
+    println!("[ok]");
 }
