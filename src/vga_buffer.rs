@@ -119,7 +119,6 @@ impl Writer {
   }
 }
 
-
 // support Rust's built-in write!/writeln! formatting macros
 use core::fmt;
 impl fmt::Write for Writer {
@@ -142,13 +141,13 @@ lazy_static! {
 
 #[macro_export]
 macro_rules! print {
-  ($($arg:tt)*) =>  {$crate::vga_buffer::_print( format_args!($($arg)*))};
+  ($($arg:tt)*) =>  {$crate::vga_buffer::_print(format_args!($($arg)*))};
 }
 
 #[macro_export]
 macro_rules! println {
   () => {$crate::print!("\n")};
-  ($($arg:tt)*) => {$crate::print!("{}\n", format_args!($($arg)*)) };
+  ($($arg:tt)*) => {$crate::print!("{}\n", format_args!($($arg)*))};
 }
 
 #[doc(hidden)]
@@ -157,15 +156,39 @@ pub fn _print(args: fmt::Arguments) {
   WRITER.lock().write_fmt(args).unwrap();
 }
 
+#[cfg(test)] // import these only for tests
+use crate::{serial_print, serial_println};
 
+#[test_case]
+fn test_println_simple() {
+    // Test if printing to VGA buffer works
+    serial_print!("test_println... ");
+    println!("test_println_simple output");
+    serial_println!("[ok]");
+}
 
+#[test_case]
+fn test_println_many() {
+    serial_print!("test_println_many... ");
+    for _ in 0..200 {
+        println!("test_println_many output");
+    }
+    serial_println!("[ok]");
+}
 
+#[test_case]
+fn test_println_output() {
+  serial_print!("test_println_output...");
 
+  let s = "This is a test string that fits on one line";
+  println!("{}", s);
+  for (i, c) in s.chars().enumerate() {
+    let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT-2][i].read();
+    assert_eq!(char::from(screen_char.ascii_character), c);
+  }
 
-
-
-
-
+  serial_println!("[ok]");
+}
 
 
 

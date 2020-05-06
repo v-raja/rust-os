@@ -14,42 +14,23 @@
 #![no_std] // don't link the Rust standard library
 #![no_main] // disable all Rust-level entry points
 #![feature(custom_test_frameworks)] // use custom test framework since standard framework depends on the standard library
-#![test_runner(crate::test_runner)] // use create test_runner as test runner
+#![test_runner(blog_os::test_runner)] // use create test_runner as test runner
 #![reexport_test_harness_main = "test_main"] // changes test function test_runner name to test_main
 use core::panic::PanicInfo;
-
-mod vga_buffer; // module to safely write to vga buffer
-
-/// This function is called on panic.
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
-
-
-#[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
-    println!("Running {} tests", tests.len());
-    for test in tests {
-        test();
-    }
-}
+use blog_os::println;
 
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    println!("Hello World{}", "!");
 
-    // Only add test_main when running tests
     #[cfg(test)]
     test_main();
 
     loop {}
 }
 
-#[test_case]
-fn trivial_assertion() {
-    print!("trivial assertion...");
-    assert_eq!(1,1);
-    println!("[ok]");
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    blog_os::test_panic_handler(info);
 }
