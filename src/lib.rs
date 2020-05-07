@@ -10,13 +10,15 @@ use core::panic::PanicInfo;
 pub mod vga_buffer; // module to safely write to vga buffer
 pub mod serial;     // module to safely write from our os to terminal
 pub mod interrupts; // module to handle CPU interrupts
+pub mod gdt;
 
 pub fn init() {
   interrupts::init_idt();
+  gdt::init();
 }
 
 pub fn test_runner(tests: &[&dyn Fn()]) {
-  println!("Running {} tests", tests.len());
+  serial_println!("Running {} tests", tests.len());
   for test in tests {
       test();
   }

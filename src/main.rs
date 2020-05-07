@@ -26,7 +26,11 @@ pub extern "C" fn _start() -> ! {
 
     blog_os::init();
 
-    x86_64::instructions::interrupts::int3();
+    fn stack_overflow() {
+        stack_overflow(); // for each recursion, the return address is pushed
+    }
+
+
 
     #[cfg(test)]
     test_main();
@@ -35,7 +39,15 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    blog_os::test_panic_handler(info);
+    println!("{}", info);
+    loop {}
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    blog_os::test_panic_handler(info)
 }
