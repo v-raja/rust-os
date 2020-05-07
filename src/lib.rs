@@ -3,11 +3,17 @@
 #![feature(custom_test_frameworks)] // use custom test framework since standard framework depends on the standard library
 #![test_runner(crate::test_runner)] // use create test_runner as test runner
 #![reexport_test_harness_main = "test_main"] // changes test function test_runner name to test_main
+#![feature(abi_x86_interrupt)] // Enable x86-interrupt calling convention for interrupt handler fns
 
 use core::panic::PanicInfo;
 
 pub mod vga_buffer; // module to safely write to vga buffer
 pub mod serial;     // module to safely write from our os to terminal
+pub mod interrupts; // module to handle CPU interrupts
+
+pub fn init() {
+  interrupts::init_idt();
+}
 
 pub fn test_runner(tests: &[&dyn Fn()]) {
   println!("Running {} tests", tests.len());
@@ -28,6 +34,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
     loop {}
 }

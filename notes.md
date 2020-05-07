@@ -31,4 +31,18 @@ Since Rust's testing framework is linked to its standard library, we have to cre
 
 Every time we run tests, we have to manually close QEMU which can get daunting. We solve this by adding a "-device" flag which specifies that if we write to the listed port of "0xf4", QEMU will exit with `(value << 1) | 1` where value is what we write to the port. QEMU's default failure code is 1 so we stay clear of that. Hence, we use the failure code as `0x11` (can be any non-zero number really) and success as `0x10` and state that the test success exit code is 33 (`(0x10 << 1) | 1`) in `cargo.toml`.
 
-We also make testing quicker by passing the messages produced by the kernel to our terminal using a serial port. 
+We also make testing quicker by passing the messages produced by the kernel to our terminal using a serial port.
+
+Lastly, we'll move our the code for the test_runner and test_panic_handler to lib.rs so that we can use the common code to handle panics and run tests for both integration tests (located in the `tests` directory) and unit tests (in each file, annotated with `#[cfg(test)]`).
+
+
+# CPU Exceptions
+
+Every architecture has its defined exceptions and has a Interrupt Description Table that maps out a type of exception to the pointer of a function that handles that type of interrupt. When an exception occurs, the cpu pushes registers overwritten by the current function to the stack, the instruction pointer, and RFLAGS register to the stack, reads and jumps to the function that handles the raised interrupt. After the interrupt is handled, the cup then returns back to the function that was running and restores the registers, instruction pointer and RFLAGS register (possibly with some bits changed to indicate an interrupt has occured).
+
+How are registers saved? What registers are saved? The saving of the registers depends on the calling conventions. The C calling convention, for example, states that certain registers (called the preserved registers) have to be saved by the callee-function (the function being called) and certain other registers (called the scratch registers) have to be saved by the caller function. The names preserved and scratch are used in relation to the callee function; the callee function can change the values of scratch registers without worrying about restoring them, but has to preserve the values of the preserved registers before it returns.
+When the callee function returns, it must re-write the original values to the preserved register, and when the caller function resumes, it must re-write the origianl values to the scratch register. Note that the compiler only saves registers whose values have been written to by the function which prevents ineffiently saving all registers. The decisions as to when and what registers need to saved are decided by the compiler during compile time.
+
+But interrupts occur during run-time and can occur on any instruction. The current function doesn't get enough notice to save any of its used registers. Hence, interrupt handler functions use the Interrupt Calling Convention (`extern x86-interrupt`). This convention gurantees that all registers used by the function when an exception happens are returned to their original state before the interrupt handler function returns.
+
+
